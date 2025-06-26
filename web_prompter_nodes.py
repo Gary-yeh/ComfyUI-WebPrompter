@@ -103,7 +103,14 @@ class PromptFinalizer:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": { "prompt": ("STRING", {"multiline": True, "dynamicPrompts": False}) }
+            "required": {
+                # 這個是可見的編輯框，但我們不再將它作為主要的數據輸入通道
+                "text_widget": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
+            },
+            "optional": {
+                # 這是一個隱藏的、專門用來接收上游節點數據的輸入通道
+                "text_input": ("STRING", {"forceInput": True, "widget": "hide"}),
+            }
         }
 
     RETURN_TYPES = ("STRING",)
@@ -111,6 +118,11 @@ class PromptFinalizer:
     FUNCTION = "finalize"
     CATEGORY = "WebPrompter"
 
-    def finalize(self, prompt):
-        print(f"[PromptFinalizer] Final prompt for output:\n---\n{prompt}\n---")
-        return (prompt,)
+    def finalize(self, text_widget, text_input=None):
+        # 核心邏輯：
+        # 1. 如果 text_input (來自上游連線) 存在，優先使用它。
+        # 2. 如果沒有上游連線，則使用 text_widget (用戶在框裡輸入的內容)。
+        final_text = text_input if text_input is not None else text_widget
+        
+        print(f"[PromptFinalizer] Final prompt for output:\n---\n{final_text}\n---")
+        return (final_text,)
