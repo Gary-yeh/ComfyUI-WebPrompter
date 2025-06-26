@@ -1,16 +1,14 @@
 # __init__.py
-from .web_prompter_nodes import ContentFetcher, LLMNewsScriptGenerator, PromptFinalizer
+from .web_prompter_nodes import ContentFetcher, LLMNewsScriptGenerator
 
 NODE_CLASS_MAPPINGS = {
     "ContentFetcher (WebPrompter)": ContentFetcher,
     "LLMNewsScriptGenerator (WebPrompter)": LLMNewsScriptGenerator,
-    "PromptFinalizer (WebPrompter)": PromptFinalizer,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ContentFetcher (WebPrompter)": "1. Content Fetcher",
     "LLMNewsScriptGenerator (WebPrompter)": "2. News Script Generator",
-    "PromptFinalizer (WebPrompter)": "3. Prompt Finalizer/Editor",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
