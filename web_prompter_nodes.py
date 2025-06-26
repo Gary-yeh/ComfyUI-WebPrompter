@@ -103,51 +103,36 @@ class PromptFinalizer:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": {}, # 必須項留空
-            "optional": {   # 所有輸入都設為可選，以獲得最大靈活性
+            "required": {
+                # 為了讓 UI 返回值能更新這個控件，它必須存在於 INPUT_TYPES 中
+                "prompt": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
+            },
+            "optional": {
+                # 我們用一個隱藏的輸入來接收上游數據，避免衝突
                 "text_input": ("STRING", {"forceInput": True, "widget": "hide"}),
-                "text_widget": ("STRING", {"multiline": True, "default": "This is the default text in the widget."}),
             }
         }
 
+    # 注意：RETURN_TYPES 現在只包含給下游節點的數據
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("final_prompt",)
     FUNCTION = "finalize"
     CATEGORY = "WebPrompter"
 
-    def finalize(self, text_widget=None, text_input=None):
+    def finalize(self, prompt, text_input=None):
+        # 決定最終的文本內容，優先使用來自上游連線的數據
+        # 如果沒有連線，則使用用戶在文本框中輸入的內容
+        final_text = text_input if text_input is not None else prompt
+
         # ======================================================================
-        # V V V 這是我們必須在後端終端看到的「強力偵錯日誌」 V V V
+        # V V V 這是解決問題的關鍵所在 V V V
         # ======================================================================
-        print("\n\n" + "#"*60)
-        print("### INSIDE PromptFinalizer: FINALIZE FUNCTION IS RUNNING! ###")
-        print("#"*60)
-
-        # 診斷來自上游連線的數據 (text_input)
-        print(f"--- Diagnosing 'text_input' (from upstream link) ---")
-        print(f"    Value: {text_input}")
-        print(f"    Type: {type(text_input)}")
-        print(f"    Is None? {text_input is None}")
-        print(f"    Content (repr): {repr(text_input)}") # repr()能區分 ' ' 和 ''
-
-        # 診斷來自界面文本框的數據 (text_widget)
-        print(f"\n--- Diagnosing 'text_widget' (from UI textbox) ---")
-        print(f"    Value: {text_widget}")
-        print(f"    Type: {type(text_widget)}")
-        print(f"    Is None? {text_widget is None}")
-        print(f"    Content (repr): {repr(text_widget)}")
-
-        # 決定輸出的邏輯
-        # 即使 'text_input' 是空字串 ""，我們也優先使用它，只要它不是 None
-        if text_input is not None:
-            final_text = text_input
-            print("\n>>> DECISION: Using 'text_input' from the upstream link.")
-        else:
-            final_text = text_widget
-            print("\n>>> DECISION: No upstream link data. Using 'text_widget' from the UI.")
-
-        print(f"\n--- FINAL OUTPUT ---")
-        print(f"    Final text to be returned: {repr(final_text)}")
-        print("#"*60 + "\n\n")
-
-        return (final_text,)
+        # 我們返回一個元組，其中第二個元素是一個特殊的 "ui" 字典。
+        # 這個字典會告訴前端去更新名為 "prompt" 的控件（widget），
+        # 將其內容設置為我們處理好的 final_text。
+        return {
+            "ui": {
+                "prompt": [final_text] # 將 'prompt' 文本框的內容更新為 final_text
+            },
+            "result": (final_text,) # 'result' 鍵包含了要傳遞給下游節點的數據
+        }
