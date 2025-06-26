@@ -103,13 +103,10 @@ class PromptFinalizer:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": {
-                # 這個是可見的編輯框，但我們不再將它作為主要的數據輸入通道
-                "text_widget": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
-            },
-            "optional": {
-                # 這是一個隱藏的、專門用來接收上游節點數據的輸入通道
+            "required": {}, # 必須項留空
+            "optional": {   # 所有輸入都設為可選，以獲得最大靈活性
                 "text_input": ("STRING", {"forceInput": True, "widget": "hide"}),
+                "text_widget": ("STRING", {"multiline": True, "default": "This is the default text in the widget."}),
             }
         }
 
@@ -118,11 +115,39 @@ class PromptFinalizer:
     FUNCTION = "finalize"
     CATEGORY = "WebPrompter"
 
-    def finalize(self, text_widget, text_input=None):
-        # 核心邏輯：
-        # 1. 如果 text_input (來自上游連線) 存在，優先使用它。
-        # 2. 如果沒有上游連線，則使用 text_widget (用戶在框裡輸入的內容)。
-        final_text = text_input if text_input is not None else text_widget
-        
-        print(f"[PromptFinalizer] Final prompt for output:\n---\n{final_text}\n---")
+    def finalize(self, text_widget=None, text_input=None):
+        # ======================================================================
+        # V V V 這是我們必須在後端終端看到的「強力偵錯日誌」 V V V
+        # ======================================================================
+        print("\n\n" + "#"*60)
+        print("### INSIDE PromptFinalizer: FINALIZE FUNCTION IS RUNNING! ###")
+        print("#"*60)
+
+        # 診斷來自上游連線的數據 (text_input)
+        print(f"--- Diagnosing 'text_input' (from upstream link) ---")
+        print(f"    Value: {text_input}")
+        print(f"    Type: {type(text_input)}")
+        print(f"    Is None? {text_input is None}")
+        print(f"    Content (repr): {repr(text_input)}") # repr()能區分 ' ' 和 ''
+
+        # 診斷來自界面文本框的數據 (text_widget)
+        print(f"\n--- Diagnosing 'text_widget' (from UI textbox) ---")
+        print(f"    Value: {text_widget}")
+        print(f"    Type: {type(text_widget)}")
+        print(f"    Is None? {text_widget is None}")
+        print(f"    Content (repr): {repr(text_widget)}")
+
+        # 決定輸出的邏輯
+        # 即使 'text_input' 是空字串 ""，我們也優先使用它，只要它不是 None
+        if text_input is not None:
+            final_text = text_input
+            print("\n>>> DECISION: Using 'text_input' from the upstream link.")
+        else:
+            final_text = text_widget
+            print("\n>>> DECISION: No upstream link data. Using 'text_widget' from the UI.")
+
+        print(f"\n--- FINAL OUTPUT ---")
+        print(f"    Final text to be returned: {repr(final_text)}")
+        print("#"*60 + "\n\n")
+
         return (final_text,)
